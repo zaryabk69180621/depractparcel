@@ -1,0 +1,54 @@
+name: deploy using parcel
+
+on: 
+  push:
+    branches: [main,master]
+  workflow_dispatch:
+permissions:
+  pages: write
+  id-token: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    environment: 
+      name: build
+      url: ${{steps.deployment.outputs.page_url}}
+    steps:
+    - name: checkout
+      uses: actions/checkout@v4
+    - name: setup nodejs
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+    - name: init project
+      run: npm init
+    - name: build with parcel
+      run: |
+         npx parcel build src/index.html --dist-dir dist --public-url ./
+    - name: upload
+      uses: actions/upload-artifact@v4
+      with:
+        name: appfiles
+        path: "./dist"
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{steps.deployment.outputs.page_url}}
+    steps:
+    - name: config pages
+      uses: actions/configure-pages@v4
+    - name: download artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: appfiles
+    - name: upload pages
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: "."
+    - name: deploy pages
+      uses: actions/deploy-pages@v4
+      
+        
